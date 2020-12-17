@@ -1,8 +1,18 @@
+# ------------------------------------------------------------------------------
+# Author: Mathis Mourey
+# Date: 17/12/2020
+# Function: Bond related functions 
+# ------------------------------------------------------------------------------
 
+
+# -----------------------------------------
+# Create function 
+# -----------------------------------------
+
+# Function that return the price, accrued interest, sensitivity and all future cashflows in a table.
 
 BondPricing = function(C, t_eval ,t_emission, t_maturity, r, C_freq){
-  
-  
+ 
   # Find all coupon dates 
   start_date = as.Date(t_emission, "%d-%m-%Y")
   end_date = as.Date(t_maturity, "%d-%m-%Y")
@@ -18,7 +28,6 @@ BondPricing = function(C, t_eval ,t_emission, t_maturity, r, C_freq){
     x = format(seq(start_date,end_date,by="month"), "%d-%m-%Y")
     all_payments = x[seq(1, length(x), 6)]
     
-    
   } else if(C_freq=='year'){
     all_payments = format(seq(start_date,end_date,by="year"), "%d-%m-%Y")
     
@@ -26,7 +35,6 @@ BondPricing = function(C, t_eval ,t_emission, t_maturity, r, C_freq){
     return('Not proper coupon payment frequency ! \n Choose from: month, trimester, semester, year')
     
   }
-  
   
   #Position yourself at the evaluation date + Evualuation of the bond
   if(t_eval!=t_emission){
@@ -49,7 +57,7 @@ BondPricing = function(C, t_eval ,t_emission, t_maturity, r, C_freq){
     accrued_interest = hold_period/total_period * C
     bond_price = (C + C*(1 - (1+r)**(-(length(payments)-1)))/r + 1*(1+r)**(-(length(payments)-1))) * (1+r)**(-(total_period-hold_period)/total_period) 
     bond_cotation = bond_price - accrued_interest
-    
+   
     
     #Sensitivity
     post_hold = (total_period-hold_period)/total_period
@@ -63,9 +71,9 @@ BondPricing = function(C, t_eval ,t_emission, t_maturity, r, C_freq){
     sensitivity_mat[(length(payments)+1),4]  = sum(sensitivity_mat[1:length(payments),4])  
     sensitivity_mat[(length(payments)+1),3]  = sum(sensitivity_mat[1:length(payments),3])  
     Sensitivity = as.numeric(-sensitivity_mat[(length(payments)+1),4]/sensitivity_mat[(length(payments)+1),3])
-    
-    
+   
   } else {
+    # If the evaluation date is the same that the coupon payment date -> no accrued interest.
     payments = all_payments
 
     bond_cotation = bond_price =  C*(1 - (1+r)**(-length(payments)))/r + 1*(1+r)**(-length(payments))
@@ -82,16 +90,14 @@ BondPricing = function(C, t_eval ,t_emission, t_maturity, r, C_freq){
     sensitivity_mat[(length(payments)+1),4]  = sum(sensitivity_mat[1:length(payments),4])  
     sensitivity_mat[(length(payments)+1),3]  = sum(sensitivity_mat[1:length(payments),3])  
     Sensitivity = as.numeric(-sensitivity_mat[(length(payments)+1),4]/sensitivity_mat[(length(payments)+1),3])
-    
   }
-  
-  
-  return(list('P'= bond_price*100, 'C'= bond_cotation*100, 'AC'= accrued_interest*100, 'S' = Sensitivity, 'S_table' = sensitivity_mat))
+ return(list('P'= bond_price*100, 'C'= bond_cotation*100, 'AC'= accrued_interest*100, 'S' = Sensitivity, 'S_table' = sensitivity_mat))
 } 
-
-
-YTM = function(bond_cotation, C, t_eval ,t_emission, t_maturity, C_freq){
   
+
+
+# Function that finds the yield to maturity (YTM) of a bond if given the cotation and the coupon rate.
+YTM = function(bond_cotation, C, t_eval ,t_emission, t_maturity, C_freq){
   
   # Find all coupon dates 
   start_date = as.Date(t_emission, "%d-%m-%Y")
@@ -116,7 +122,6 @@ YTM = function(bond_cotation, C, t_eval ,t_emission, t_maturity, C_freq){
     return('Not proper coupon payment frequency ! \n Choose from: month, trimester, semester, year')
     
   }
-  
   
   #Position yourself at the evaluation date + Evualuation of the bond
   if(t_eval!=t_emission){
@@ -152,19 +157,10 @@ YTM = function(bond_cotation, C, t_eval ,t_emission, t_maturity, C_freq){
       }
     }
   }
-  
   return(my_yield)
 }
-
-YTM(bond_cotation=100, C=0.03, t_eval='17-06-2010' ,t_emission='01-03-2007', t_maturity='01-03-2021', C_freq='trimester')
-
-X1 =BondPricing(C=0.04, t_eval='17-06-2010' ,t_emission='01-01-2009', t_maturity='01-01-2020', r=0.03, C_freq='year')
-X2 =BondPricing(C=0.01, t_eval='17-06-2010' ,t_emission='01-03-2007', t_maturity='01-03-2021', r=0.03, C_freq='trimester')
-X3 =BondPricing(C=0.07, t_eval='17-06-2010' ,t_emission='01-01-2005', t_maturity='01-01-2020', r=0.03, C_freq='year')
-X4 =BondPricing(C=0.1, t_eval='17-06-2010' ,t_emission='01-06-2009', t_maturity='01-06-2027', r=0.03, C_freq='semester')
-X5 =BondPricing(C=0.02, t_eval='17-06-2010' ,t_emission='01-01-2009', t_maturity='01-01-2022', r=0.03, C_freq='year')
-
-
+  
+# Function that returns the portfolio price and sensitivity if given a list of bonds (computed with BondPricing)
 BondPortfolio = function(list_of_bonds, weights){
   
   PortPrice = 0
@@ -176,9 +172,23 @@ BondPortfolio = function(list_of_bonds, weights){
   for(i in 1:length(list_of_bonds)){
     PortSensi = PortSensi + list_of_bonds[[i]]$S * weights[i]
   }
- 
   return(list('Port_Price'= PortPrice, 'Port_Sensi'= PortSensi))   
 }
+
+  
+# -----------------------------------------
+# Evaluate functions 
+# -----------------------------------------
+  
+# test 
+YTM(bond_cotation=100, C=0.03, t_eval='17-06-2010' ,t_emission='01-03-2007', t_maturity='01-03-2021', C_freq='trimester')
+
+# Multiple bond pricing in order to build a bond portfolio -> evaluate the price & sensitivity of the portfolio
+X1 =BondPricing(C=0.04, t_eval='17-06-2010' ,t_emission='01-01-2009', t_maturity='01-01-2020', r=0.03, C_freq='year')
+X2 =BondPricing(C=0.01, t_eval='17-06-2010' ,t_emission='01-03-2007', t_maturity='01-03-2021', r=0.03, C_freq='trimester')
+X3 =BondPricing(C=0.07, t_eval='17-06-2010' ,t_emission='01-01-2005', t_maturity='01-01-2020', r=0.03, C_freq='year')
+X4 =BondPricing(C=0.1, t_eval='17-06-2010' ,t_emission='01-06-2009', t_maturity='01-06-2027', r=0.03, C_freq='semester')
+X5 =BondPricing(C=0.02, t_eval='17-06-2010' ,t_emission='01-01-2009', t_maturity='01-01-2022', r=0.03, C_freq='year')
 
 BondPortfolio(list_of_bonds =list(X1,X2,X3,X4,X5), weights= c(0.1, 0.3, 0.2, 0.1, 0.3))
 
@@ -217,6 +227,8 @@ p
 
 
 
+
+  
 
 
 
